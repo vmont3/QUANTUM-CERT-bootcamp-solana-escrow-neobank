@@ -13,19 +13,23 @@ pub mod counter_program {
         Ok(())
     }
 
-    // Step 4: Increment — aritmética simples
     pub fn increment(ctx: Context<Increment>) -> Result<()> {
         let counter = &mut ctx.accounts.counter;
         counter.count += 1;
         Ok(())
     }
 
-    // Step 4: Decrement — aritmética SEGURA
-    // saturating_sub() garante que o valor pare em 0 (sem underflow).
-    // No Solana, bugs de underflow/overflow custam dinheiro real!
     pub fn decrement(ctx: Context<Decrement>) -> Result<()> {
         let counter = &mut ctx.accounts.counter;
         counter.count = counter.count.saturating_sub(1);
+        Ok(())
+    }
+
+    // Step 5: Reset — restaura o contador para zero
+    // Programa completo com 4 instruções: initialize, increment, decrement, reset
+    pub fn reset(ctx: Context<Reset>) -> Result<()> {
+        let counter = &mut ctx.accounts.counter;
+        counter.count = 0;
         Ok(())
     }
 }
@@ -39,8 +43,6 @@ pub struct Initialize<'info> {
     pub system_program: Program<'info, System>,
 }
 
-// Step 4: Contextos para Increment e Decrement
-// `mut` na counter = estamos modificando o estado on-chain
 #[derive(Accounts)]
 pub struct Increment<'info> {
     #[account(mut)]
@@ -50,6 +52,14 @@ pub struct Increment<'info> {
 
 #[derive(Accounts)]
 pub struct Decrement<'info> {
+    #[account(mut)]
+    pub counter: Account<'info, Counter>,
+    pub user: Signer<'info>,
+}
+
+// Step 5: Contexto para Reset
+#[derive(Accounts)]
+pub struct Reset<'info> {
     #[account(mut)]
     pub counter: Account<'info, Counter>,
     pub user: Signer<'info>,
