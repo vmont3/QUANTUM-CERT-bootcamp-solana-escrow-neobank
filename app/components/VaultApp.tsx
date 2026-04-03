@@ -70,7 +70,7 @@ export const VaultApp: FC = () => {
       [Buffer.from("vault_v3"), publicKey.toBuffer()],
       program.programId
     );
-    return pda;
+    return vaultPDA;
   }, [publicKey, program]);
 
   const addToast = useCallback((message: string, type: "success" | "error") => {
@@ -216,7 +216,7 @@ export const VaultApp: FC = () => {
           fromVault: vaultPDA, 
           escrow: escrowPDA,
           sender: publicKey,
-          receiver: targetPubkey,
+          receiver: receiverPubKey,
           systemProgram: SystemProgram.programId
         })
         .rpc();
@@ -262,7 +262,7 @@ export const VaultApp: FC = () => {
         .accounts({ 
           escrow: escrowPDA,
           toVault: vaultPDA,
-          sender: senderPubkey,
+          sender: senderPubKey,
           receiver: publicKey,
           quantum_authority: quantumServerKeypair.publicKey,
         })
