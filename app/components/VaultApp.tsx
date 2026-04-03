@@ -67,7 +67,7 @@ export const VaultApp: FC = () => {
   const vaultPDA = useMemo(() => {
     if (!publicKey || !program) return null;
     const [pda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("vault_v2"), publicKey.toBuffer()],
+      [Buffer.from("vault_v3"), publicKey.toBuffer()],
       program.programId
     );
     return pda;

@@ -93,7 +93,7 @@ pub struct InitVault<'info> {
         init, 
         payer = owner, 
         space = 8 + 32 + 32 + 8 + 1 + 1, 
-        seeds = [b"vault_v2", owner.key().as_ref()], 
+        seeds = [b"vault_v3", owner.key().as_ref()], 
         bump
     )]
     pub vault: Account<'info, VaultAccount>,
@@ -104,7 +104,7 @@ pub struct InitVault<'info> {
 
 #[derive(Accounts)]
 pub struct Deposit<'info> {
-    #[account(mut, seeds = [b"vault_v2", owner.key().as_ref()], bump)]
+    #[account(mut, seeds = [b"vault_v3", owner.key().as_ref()], bump)]
     pub vault: Account<'info, VaultAccount>,
     #[account(mut)]
     pub owner: Signer<'info>,
@@ -113,7 +113,7 @@ pub struct Deposit<'info> {
 
 #[derive(Accounts)]
 pub struct Withdraw<'info> {
-    #[account(mut, seeds = [b"vault_v2", owner.key().as_ref()], bump)]
+    #[account(mut, seeds = [b"vault_v3", owner.key().as_ref()], bump)]
     pub vault: Account<'info, VaultAccount>,
     #[account(mut)]
     pub owner: Signer<'info>,
@@ -123,7 +123,7 @@ pub struct Withdraw<'info> {
 #[derive(Accounts)]
 #[instruction(amount: u64, item_description: String)]
 pub struct LockEscrow<'info> {
-    #[account(mut, seeds = [b"vault_v2", sender.key().as_ref()], bump)]
+    #[account(mut, seeds = [b"vault_v3", sender.key().as_ref()], bump)]
     pub from_vault: Account<'info, VaultAccount>,
     #[account(
         init,
@@ -144,7 +144,7 @@ pub struct LockEscrow<'info> {
 pub struct ReleaseEscrow<'info> {
     #[account(mut, seeds = [b"escrow_v2", sender.key().as_ref(), receiver.key().as_ref()], bump)]
     pub escrow: Account<'info, EscrowAccount>,
-    #[account(mut, seeds = [b"vault_v2", receiver.key().as_ref()], bump)]
+    #[account(mut, seeds = [b"vault_v3", receiver.key().as_ref()], bump)]
     pub to_vault: Account<'info, VaultAccount>,
     /// CHECK: Sender pubkey for PDA seed
     pub sender: UncheckedAccount<'info>,
