@@ -221,7 +221,9 @@ export const VaultApp: FC = () => {
     setItemDescription("");
   };
 
-    });
+  const handleReleaseManual = () => {
+    if (!releaseSender) return;
+    handleReleaseFromInbox(releaseSender);
     setReleaseSender("");
   };
 
@@ -533,8 +535,27 @@ export const VaultApp: FC = () => {
                       </div>
                     </div>
 
+                    {/* Liberar Escrow (Manual) */}
+                    <div className="bg-[#1b1b1b] rounded-lg p-8 border border-white/5">
+                      <div className="flex items-center gap-3 mb-6">
+                        <span className="material-symbols-outlined text-white">how_to_reg</span>
+                        <h3 className="text-xl font-bold text-white uppercase italic tracking-tighter">Finalizar Recebimento</h3>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <p className="text-xs text-zinc-500 mb-4 leading-relaxed">Libere os fundos travados em seu favor informando a Pubkey do pagador original.</p>
+                        <div>
+                          <label className="text-[10px] uppercase text-zinc-500 mb-1 block">Sender Pubkey</label>
+                          <input 
+                            type="text"
+                            value={releaseSender}
+                            onChange={(e) => setReleaseSender(e.target.value)}
+                            className="w-full bg-black border border-white/10 focus:border-white focus:ring-0 text-white p-3 rounded-sm text-xs"
+                            placeholder="Quem enviou os fundos"
+                          />
+                        </div>
                         <button 
-                          onClick={() => handleReleaseFromInbox(releaseSender)}
+                          onClick={handleReleaseManual}
                           className="w-full border border-white/10 text-white font-bold py-4 rounded-sm flex items-center justify-center gap-2 hover:bg-white/5 transition-all uppercase text-xs"
                         >
                           <span className="material-symbols-outlined text-sm">verified_user</span>
@@ -593,6 +614,7 @@ export const VaultApp: FC = () => {
                   </div>
                 </section>
               )}
+
 
               {activeTab === 'validator' && (
                 <section>
