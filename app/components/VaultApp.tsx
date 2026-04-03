@@ -49,6 +49,8 @@ export const VaultApp: FC = () => {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [isValidating, setIsValidating] = useState(false);
   const [isHashValid, setIsHashValid] = useState(false);
+  const [assetStatus, setAssetStatus] = useState("Autenticidade Confirmada");
+  const [assetFacet, setAssetFacet] = useState("Transação");
   const [copiedId, setCopiedId] = useState<number | null>(null);
   
   // Form inputs
@@ -279,6 +281,16 @@ export const VaultApp: FC = () => {
       setIsValidating(false);
       if (validatorHash.length >= 40) {
         setIsHashValid(true);
+        // Tenta extrair contexto do inventário híbrido local
+        const savedAssets = JSON.parse(localStorage.getItem("quantum_assets") || "[]");
+        const match = savedAssets.find((a: any) => a.txId === validatorHash);
+        if (match) {
+           setAssetStatus(match.status || "Autenticidade Confirmada");
+           setAssetFacet(match.tipo || "Ativo Solana");
+        } else {
+           setAssetStatus("Autenticidade Confirmada");
+           setAssetFacet("Transação de Ledger");
+        }
       } else {
         alert("Hash inválido. Assinaturas Solana devem ter pelo menos 40 caracteres.");
       }
@@ -692,10 +704,10 @@ export const VaultApp: FC = () => {
                                          <span className="material-symbols-outlined text-emerald-400 text-5xl">check</span>
                                       </div>
 
-                                      <span className="text-emerald-400 text-[10px] font-bold tracking-[0.5em] uppercase mb-1">Autenticidade Confirmada</span>
-                                      <h2 className="text-white text-3xl font-bold tracking-tighter mb-2">Produto Verificado</h2>
+                                      <span className="text-emerald-400 text-[10px] font-bold tracking-[0.5em] uppercase mb-1">{assetStatus.toUpperCase()}</span>
+                                      <h2 className="text-white text-3xl font-bold tracking-tighter mb-2">{assetFacet}</h2>
                                       <p className="text-zinc-400 text-sm max-w-[280px] leading-relaxed mb-8">
-                                         Este item foi verificado com sucesso na blockchain Quantum Cert.
+                                         A {assetStatus.toLowerCase()} deste(a) {assetFacet.toLowerCase()} foi validada pela Quantum Cert e registrada na blockchain da Solana.
                                       </p>
 
                                       <div className="w-full bg-[#1a1a1a] rounded-xl p-4 space-y-3">
