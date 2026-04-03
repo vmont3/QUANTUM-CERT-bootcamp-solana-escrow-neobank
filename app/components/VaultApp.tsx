@@ -66,7 +66,7 @@ export const VaultApp: FC = () => {
   // PDA calculation - FASE 55: Semente vault_v3
   const vaultPDA = useMemo(() => {
     if (!publicKey || !program) return null;
-    const [pda] = PublicKey.findProgramAddressSync(
+    const [vaultPDA] = PublicKey.findProgramAddressSync(
       [Buffer.from("vault_v3"), publicKey.toBuffer()],
       program.programId
     );
@@ -205,9 +205,9 @@ export const VaultApp: FC = () => {
 
     runTx("Travar Fundos (Escrow)", "Escrow", `-${escrowAmount} SOL`, async () => {
       if (!program || !publicKey || !vaultPDA) throw new Error("Não conectado");
-      const targetPubkey = new PublicKey(escrowTarget);
+      const receiverPubKey = new PublicKey(escrowTarget);
       const [escrowPDA] = PublicKey.findProgramAddressSync(
-        [Buffer.from("escrow_v3"), publicKey.toBuffer(), targetPubkey.toBuffer()],
+        [Buffer.from("escrow_v3"), publicKey.toBuffer(), receiverPubKey.toBuffer()],
         program.programId
       );
       
@@ -251,9 +251,10 @@ export const VaultApp: FC = () => {
   const handleReleaseFromInbox = (sender: string) => {
     runTx("Liberar Fundos (Inbox)", "Escrow", undefined, async () => {
       if (!program || !publicKey || !vaultPDA) throw new Error("Não conectado");
-      const senderPubkey = new PublicKey(sender);
+      const receiverPubKey = new PublicKey(publicKey.toString());
+      const senderPubKey = new PublicKey(sender);
       const [escrowPDA] = PublicKey.findProgramAddressSync(
-        [Buffer.from("escrow_v3"), senderPubkey.toBuffer(), publicKey.toBuffer()],
+        [Buffer.from("escrow_v3"), senderPubKey.toBuffer(), publicKey.toBuffer()],
         program.programId
       );
       

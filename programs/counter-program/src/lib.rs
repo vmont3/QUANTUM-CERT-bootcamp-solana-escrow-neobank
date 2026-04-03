@@ -90,10 +90,10 @@ pub mod quantum_cert_vault {
 #[derive(Accounts)]
 pub struct InitVault<'info> {
     #[account(
-        init, 
-        payer = owner, 
-        space = 8 + 32 + 32 + 8 + 1 + 1, 
-        seeds = [b"vault_v3", owner.key().as_ref()], 
+        init,
+        payer = owner,
+        space = 8 + 32 + 32 + 8,
+        seeds = [b"vault_v3", owner.key().as_ref()],
         bump
     )]
     pub vault: Account<'info, VaultAccount>,
@@ -125,14 +125,14 @@ pub struct Withdraw<'info> {
 pub struct LockEscrow<'info> {
     #[account(mut, seeds = [b"vault_v3", sender.key().as_ref()], bump)]
     pub from_vault: Account<'info, VaultAccount>,
-    #[account(
-        init,
-        payer = sender,
-        space = 8 + 32 + 32 + 8 + 4 + item_description.len() + 1 + 32,
-        seeds = [b"escrow_v3", sender.key().as_ref(), receiver.key().as_ref()],
-        bump
-    )]
-    pub escrow: Account<'info, EscrowAccount>,
+#[account(
+    init,
+    payer = sender,
+    space = 8 + 32 + 32 + 8 + 256,
+    seeds = [b"escrow_v3", sender.key().as_ref(), receiver.key().as_ref()],
+    bump
+)]
+pub escrow: Account<'info, EscrowAccount>,
     #[account(mut)]
     pub sender: Signer<'info>,
     /// CHECK: Target receiver
