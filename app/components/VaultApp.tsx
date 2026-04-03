@@ -5,6 +5,7 @@ import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { PublicKey, SystemProgram, LAMPORTS_PER_SOL, Keypair } from "@solana/web3.js";
 import { BN } from "@coral-xyz/anchor";
+import Image from "next/image";
 import { useProgram } from "../lib/useProgram";
 
 type TxStatus = "idle" | "loading" | "success" | "error";
@@ -60,6 +61,7 @@ export const VaultApp: FC = () => {
   const [itemDescription, setItemDescription] = useState("");
   const [releaseSender, setReleaseSender] = useState("");
   const [pendingEscrows, setPendingEscrows] = useState<any[]>([]);
+  const [hybridAssets, setHybridAssets] = useState<any[]>([]);
 
   const [validatorHash, setValidatorHash] = useState("");
 
@@ -128,6 +130,11 @@ export const VaultApp: FC = () => {
       setPendingEscrows(allEscrows.filter((e: any) => !e.account.isCompleted));
     } catch (e) {
       console.error("Inbox fetch error:", e);
+    }
+    // Carregar Inventário Híbrido (localStorage mock)
+    const localData = localStorage.getItem("quantum_assets");
+    if (localData) {
+      setHybridAssets(JSON.parse(localData));
     }
   }, [program, publicKey, vaultPDA, connection]);
 
@@ -202,11 +209,11 @@ export const VaultApp: FC = () => {
       if (!program || !publicKey || !vaultPDA) throw new Error("Não conectado");
       const targetPubkey = new PublicKey(escrowTarget);
       const [escrowPDA] = PublicKey.findProgramAddressSync(
-        [Buffer.from("escrow"), publicKey.toBuffer(), targetPubkey.toBuffer()],
+        [Buffer.from("escrow_v2"), publicKey.toBuffer(), targetPubkey.toBuffer()],
         program.programId
       );
       
-      return (program.methods as any).lockEscrow(new BN(lamports), itemDescription)
+      const tx = await (program.methods as any).lockEscrow(new BN(lamports), itemDescription)
         .accounts({ 
           fromVault: vaultPDA, 
           escrow: escrowPDA,
@@ -215,6 +222,22 @@ export const VaultApp: FC = () => {
           systemProgram: SystemProgram.programId
         })
         .rpc();
+
+      // FASE 48.4: Inventário Híbrido (Off-chain Mock)
+      const newAsset = {
+        txId: tx,
+        tipo: "Contrato Condicional",
+        ativo: escrowAmount,
+        data: new Date().toLocaleDateString('pt-BR'),
+        status: "Aguardando Assinatura",
+        recebedor: escrowTarget.slice(0, 8) + "..."
+      };
+      
+      const updatedAssets = [newAsset, ...hybridAssets];
+      setHybridAssets(updatedAssets);
+      localStorage.setItem("quantum_assets", JSON.stringify(updatedAssets));
+
+      return tx;
     });
     setEscrowAmount("");
     setEscrowTarget("");
@@ -232,7 +255,7 @@ export const VaultApp: FC = () => {
       if (!program || !publicKey || !vaultPDA) throw new Error("Não conectado");
       const senderPubkey = new PublicKey(sender);
       const [escrowPDA] = PublicKey.findProgramAddressSync(
-        [Buffer.from("escrow"), senderPubkey.toBuffer(), publicKey.toBuffer()],
+        [Buffer.from("escrow_v2"), senderPubkey.toBuffer(), publicKey.toBuffer()],
         program.programId
       );
       
@@ -288,9 +311,7 @@ export const VaultApp: FC = () => {
       {/* Barra de Navegação Superior - FASE 40.1: Restauração de Branding */}
       <header className="flex justify-between items-center w-full px-6 py-4 max-w-full mx-auto fixed top-0 z-50 bg-[#1b1b1b] border-none">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-white rounded-sm flex items-center justify-center">
-             <span className="text-black font-bold text-xs">QC</span>
-          </div>
+          <Image src="/logo.png" alt="Quantum Cert" width={40} height={40} className="object-contain" />
           <h1 className="text-xl font-bold tracking-tighter text-white">QUANTUM CERT // Vault</h1>
         </div>
         <div className="hidden md:flex gap-8 items-center">
@@ -617,12 +638,13 @@ export const VaultApp: FC = () => {
 
 
               {activeTab === 'validator' && (
-                <section>
+                <section className="space-y-8 font-label">
                     <div className="bg-[#1b1b1b] p-10 rounded-lg border-2 border-[#d4af37]/30 font-label relative overflow-hidden">
                        {/* Efeito de Documento Oficial */}
                        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-2xl"></div>
                        
-                       <div className="text-center mb-10 border-b border-white/10 pb-6">
+                       <div className="text-center mb-10 border-b border-white/10 pb-6 flex flex-col items-center">
+                          <Image src="/logo.png" alt="Quantum Cert" width={60} height={60} className="mb-4 grayscale opacity-50 contrast-125" />
                           <h4 className="text-[10px] text-[#d4af37] font-label uppercase tracking-[0.3em] font-bold mb-2">Supreteam Hackathon // Proof of Integrity</h4>
                           <h3 className="text-3xl font-headline font-bold text-white tracking-widest uppercase">Certificado de Custódia Imutável</h3>
                        </div>
@@ -697,8 +719,46 @@ export const VaultApp: FC = () => {
                              )}
                           </div>
                        </div>
+                     <div className="mt-12 pt-12 border-t border-white/5">
+                        <div className="flex items-center gap-3 mb-8">
+                           <span className="material-symbols-outlined text-primary">inventory_2</span>
+                           <h3 className="text-xl font-bold text-white uppercase italic tracking-tighter">Meu Inventário de Ativos (Híbrido)</h3>
+                        </div>
+
+                        {hybridAssets.length === 0 ? (
+                           <div className="py-12 bg-white/5 rounded-lg border border-dashed border-white/10 text-center text-zinc-600 italic text-xs uppercase tracking-widest">
+                              Nenhum ativo off-chain registrado nesta sessão local.
+                           </div>
+                        ) : (
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {hybridAssets.map((asset, idx) => (
+                                 <div key={idx} className="bg-[#222] border border-white/5 p-5 rounded flex flex-col">
+                                    <div className="flex justify-between items-start mb-2">
+                                       <span className="text-[10px] bg-white/10 px-2 py-1 rounded text-zinc-400 font-bold uppercase">{asset.tipo}</span>
+                                       <span className="text-[9px] text-zinc-500 font-mono">{asset.txId.slice(0, 10)}...</span>
+                                    </div>
+                                    <div className="text-lg font-bold text-white tracking-tighter uppercase italic">{asset.ativo} SOL</div>
+                                    <div className="mt-3 flex justify-between items-center">
+                                       <div className="flex flex-col">
+                                          <span className="text-[9px] text-zinc-600 uppercase">Status</span>
+                                          <span className="text-[10px] text-primary font-bold uppercase">{asset.status}</span>
+                                       </div>
+                                       <div className="flex flex-col items-end">
+                                          <span className="text-[9px] text-zinc-600 uppercase">Data</span>
+                                          <span className="text-[10px] text-zinc-400 font-bold uppercase">{asset.data}</span>
+                                       </div>
+                                    </div>
+                                    <div className="mt-4 pt-3 border-t border-white/5 text-[9px] text-zinc-600 uppercase flex justify-between">
+                                       <span>Receiver: {asset.recebedor}</span>
+                                       <span className="text-primary/40 cursor-help" title="Validado pela On-chain Integrity Law">QC_HYBRID_AUTH_OK</span>
+                                    </div>
+                                 </div>
+                              ))}
+                           </div>
+                        )}
+                     </div>
                     </div>
-                </section>
+                    </section>
               )}
 
               {/* Tabela de Transações */}

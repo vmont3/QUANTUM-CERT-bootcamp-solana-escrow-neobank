@@ -26,7 +26,7 @@ describe("quantum_cert_vault_escrow", () => {
   );
 
   const [escrowPDA] = PublicKey.findProgramAddressSync(
-    [Buffer.from("escrow"), owner.toBuffer(), receiver.publicKey.toBuffer()],
+    [Buffer.from("escrow_v2"), owner.toBuffer(), receiver.publicKey.toBuffer()],
     program.programId
   );
 
