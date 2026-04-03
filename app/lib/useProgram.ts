@@ -5,7 +5,7 @@ import { PublicKey } from "@solana/web3.js";
 import idl from "./quantum_cert_vault.json";
 
 export const PROGRAM_ID = new PublicKey(
-  "HDXeLKERZhsXiFxAddtpfMhFpBt4bmSAYuLeBwNAWqms"
+  "CnxgAWYAFCNQPE9g1SFGyTVqKaVVVmPXYG5eXT9EjqxN"
 );
 
 export function useProgram() {

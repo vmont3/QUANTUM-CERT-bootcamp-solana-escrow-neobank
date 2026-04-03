@@ -59,6 +59,7 @@ export const VaultApp: FC = () => {
   const [escrowAmount, setEscrowAmount] = useState("");
   const [itemDescription, setItemDescription] = useState("");
   const [releaseSender, setReleaseSender] = useState("");
+  const [pendingEscrows, setPendingEscrows] = useState<any[]>([]);
 
   const [validatorHash, setValidatorHash] = useState("");
 
@@ -113,6 +114,21 @@ export const VaultApp: FC = () => {
 
     const bal = await connection.getBalance(publicKey);
     setSolBalance(bal / LAMPORTS_PER_SOL);
+
+    // Buscar Escrows Pendentes (Inbox)
+    try {
+      const allEscrows = await (program.account as any).escrowAccount.all([
+        {
+          memcmp: {
+            offset: 40, // receiver @ 40
+            bytes: publicKey.toBase58(),
+          }
+        }
+      ]);
+      setPendingEscrows(allEscrows.filter((e: any) => !e.account.isCompleted));
+    } catch (e) {
+      console.error("Inbox fetch error:", e);
+    }
   }, [program, publicKey, vaultPDA, connection]);
 
   useEffect(() => {
@@ -205,12 +221,14 @@ export const VaultApp: FC = () => {
     setItemDescription("");
   };
 
-  const handleReleaseEscrow = () => {
-    if (!releaseSender) return;
+    });
+    setReleaseSender("");
+  };
 
-    runTx("Liberar Fundos (Escrow)", "Escrow", undefined, async () => {
+  const handleReleaseFromInbox = (sender: string) => {
+    runTx("Liberar Fundos (Inbox)", "Escrow", undefined, async () => {
       if (!program || !publicKey || !vaultPDA) throw new Error("Não conectado");
-      const senderPubkey = new PublicKey(releaseSender);
+      const senderPubkey = new PublicKey(sender);
       const [escrowPDA] = PublicKey.findProgramAddressSync(
         [Buffer.from("escrow"), senderPubkey.toBuffer(), publicKey.toBuffer()],
         program.programId
@@ -222,12 +240,11 @@ export const VaultApp: FC = () => {
           toVault: vaultPDA,
           sender: senderPubkey,
           receiver: publicKey,
-          quantumAuthority: quantumAuthorityKeypair.publicKey,
+          quantum_authority: quantumAuthorityKeypair.publicKey,
         })
         .signers([quantumAuthorityKeypair])
         .rpc();
     });
-    setReleaseSender("");
   };
 
   const handleValidateInput = () => {
@@ -444,6 +461,7 @@ export const VaultApp: FC = () => {
                           </button>
                         </div>
                       </div>
+                      <p className="text-[10px] text-zinc-600 mt-4 text-center italic">*A taxa de rede (Gas) de ~0.000005 SOL é paga pelo inicializador da transação.</p>
                     </div>
 
                     <div className="lg:col-span-4 space-y-6">
@@ -515,68 +533,146 @@ export const VaultApp: FC = () => {
                       </div>
                     </div>
 
-                    {/* Liberar Escrow */}
-                    <div className="bg-[#1b1b1b] rounded-lg p-8 border border-white/5">
-                      <div className="flex items-center gap-3 mb-6">
-                        <span className="material-symbols-outlined text-white">how_to_reg</span>
-                        <h3 className="text-xl font-bold text-white uppercase italic tracking-tighter">Finalizar Recebimento</h3>
-                      </div>
-                      
-                      <div className="space-y-4">
-                        <p className="text-xs text-zinc-500 mb-4 leading-relaxed">Libere os fundos travados em seu favor informando a Pubkey do pagador original.</p>
-                        <div>
-                          <label className="text-[10px] uppercase text-zinc-500 mb-1 block">Sender Pubkey</label>
-                          <input 
-                            type="text"
-                            value={releaseSender}
-                            onChange={(e) => setReleaseSender(e.target.value)}
-                            className="w-full bg-black border border-white/10 focus:border-white focus:ring-0 text-white p-3 rounded-sm text-xs"
-                            placeholder="Quem enviou os fundos"
-                          />
-                        </div>
                         <button 
-                          onClick={handleReleaseEscrow}
+                          onClick={() => handleReleaseFromInbox(releaseSender)}
                           className="w-full border border-white/10 text-white font-bold py-4 rounded-sm flex items-center justify-center gap-2 hover:bg-white/5 transition-all uppercase text-xs"
                         >
                           <span className="material-symbols-outlined text-sm">verified_user</span>
-                          Assinar & Liberar (Multi-Sig)
+                          Assinar & Liberar (Manual)
                         </button>
                       </div>
                     </div>
+                  </div>
+
+                  {/* FASE 46.1: Caixa de Entrada de Escrows */}
+                  <div className="bg-[#1b1b1b] rounded-lg p-8 border border-white/5 font-label">
+                     <div className="flex items-center justify-between mb-8">
+                        <div className="flex items-center gap-3">
+                           <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
+                              <span className="material-symbols-outlined text-primary">inbox</span>
+                           </div>
+                           <h3 className="text-xl font-bold text-white uppercase italic tracking-tighter">Caixa de Entrada de Contratos</h3>
+                        </div>
+                        <span className="text-[10px] bg-primary/10 text-primary px-3 py-1 rounded-full font-bold">{pendingEscrows.length} PENDENTES</span>
+                     </div>
+
+                     {pendingEscrows.length === 0 ? (
+                        <div className="py-12 border border-dashed border-white/5 rounded-lg flex flex-col items-center justify-center text-zinc-600">
+                           <span className="material-symbols-outlined text-4xl mb-2 opacity-20">mail</span>
+                           <p className="text-xs uppercase tracking-widest">Nenhum contrato pendente para assinatura</p>
+                        </div>
+                     ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                           {pendingEscrows.map((escrow, idx) => (
+                              <div key={idx} className="bg-black/40 border border-white/5 p-6 rounded-lg group hover:border-primary/30 transition-all flex flex-col justify-between h-full">
+                                 <div>
+                                    <div className="flex justify-between items-start mb-4">
+                                       <span className="text-[10px] text-zinc-500 uppercase tracking-tighter">Remetente</span>
+                                       <span className="text-[10px] text-primary font-mono">{escrow.account.sender.toString().slice(0,4)}...{escrow.account.sender.toString().slice(-4)}</span>
+                                    </div>
+                                    <h4 className="text-white font-bold text-lg mb-1 leading-tight group-hover:text-primary transition-colors italic uppercase tracking-tighter">
+                                       {escrow.account.itemDescription}
+                                    </h4>
+                                    <div className="mt-4 flex items-center gap-2">
+                                       <span className="text-xl font-bold text-white tracking-tighter">{(escrow.account.amount.toNumber() / LAMPORTS_PER_SOL).toFixed(4)}</span>
+                                       <span className="text-[10px] text-zinc-500 font-label">SOL</span>
+                                    </div>
+                                 </div>
+                                 <button 
+                                    onClick={() => handleReleaseFromInbox(escrow.account.sender.toString())}
+                                    className="w-full mt-6 bg-white text-black font-bold py-3 rounded-sm text-xs hover:bg-zinc-200 transition-all flex items-center justify-center gap-2"
+                                 >
+                                    <span className="material-symbols-outlined text-sm">edit_document</span>
+                                    Assinar e Liberar
+                                 </button>
+                              </div>
+                           ))}
+                        </div>
+                     )}
+                     <p className="text-[10px] text-zinc-600 mt-6 italic text-left">*A taxa de rede (Gas) de ~0.000005 SOL é paga pelo recebedor ao assinar a liberação final.</p>
                   </div>
                 </section>
               )}
 
               {activeTab === 'validator' && (
                 <section>
-                    <div className="bg-[#1b1b1b] p-10 rounded-lg border border-white/5 font-label">
-                       <h3 className="text-2xl font-bold text-white mb-6 uppercase tracking-tighter italic">Validador de Ativos</h3>
-                       <div className="grid md:grid-cols-2 gap-10">
-                          <div className="space-y-4">
-                             <input 
-                               type="text"
-                               value={validatorHash}
-                               onChange={(e) => setValidatorHash(e.target.value)}
-                               className="w-full bg-black border border-white/10 text-white p-4 rounded-sm text-xs"
-                               placeholder="Assinatura da TX"
-                             />
+                    <div className="bg-[#1b1b1b] p-10 rounded-lg border-2 border-[#d4af37]/30 font-label relative overflow-hidden">
+                       {/* Efeito de Documento Oficial */}
+                       <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+                       
+                       <div className="text-center mb-10 border-b border-white/10 pb-6">
+                          <h4 className="text-[10px] text-[#d4af37] font-label uppercase tracking-[0.3em] font-bold mb-2">Supreteam Hackathon // Proof of Integrity</h4>
+                          <h3 className="text-3xl font-headline font-bold text-white tracking-widest uppercase">Certificado de Custódia Imutável</h3>
+                       </div>
+
+                       <div className="grid lg:grid-cols-2 gap-12">
+                          <div className="space-y-6">
+                             <div>
+                                <label className="text-[10px] uppercase text-zinc-500 tracking-widest mb-2 block font-bold text-left">Input de Auditoria Blockchain</label>
+                                <input 
+                                  type="text"
+                                  value={validatorHash}
+                                  onChange={(e) => setValidatorHash(e.target.value)}
+                                  className="w-full bg-black border border-white/10 text-white p-4 rounded-sm text-xs font-mono"
+                                  placeholder="COLE A ASSINATURA DA TRANSAÇÃO (TX HASH)"
+                                />
+                             </div>
                              <button 
                                onClick={handleValidateInput}
                                disabled={isValidating}
-                               className="w-full bg-zinc-800 text-white font-bold py-4 rounded-sm flex items-center justify-center gap-2 uppercase text-xs"
+                               className="w-full bg-white text-black font-bold py-4 rounded-sm flex items-center justify-center gap-2 uppercase text-xs hover:bg-[#d4af37] hover:text-black transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)]"
                              >
-                               Validar Registro
+                               {isValidating ? "Processando Algoritmo Falcon-512..." : "Validar Registro na Ledger"}
                              </button>
                           </div>
-                          <div className="bg-black/50 p-6 rounded flex items-center justify-center border border-dashed border-white/10">
-                             {isValidating ? <span className="animate-pulse text-zinc-500 text-xs text-center uppercase tracking-widest font-label">Auditando ledger Solana...</span> : 
-                              isHashValid ? (
-                                <div className="text-green-500 flex flex-col items-center gap-2">
-                                   <span className="material-symbols-outlined text-4xl">verified</span>
-                                   <span className="text-xs uppercase font-bold tracking-widest">Autenticidade Confirmada</span>
-                                   <a href={`https://solscan.io/tx/${validatorHash}?cluster=devnet`} target="_blank" className="text-[10px] underline mt-2">Ver na Solscan</a>
+
+                          <div className={`relative p-8 rounded border ${isHashValid ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-white/5 bg-black/40'} transition-all min-h-[200px] flex flex-col justify-center`}>
+                             {isValidating ? (
+                                <div className="flex flex-col items-center">
+                                   <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin mb-4"></div>
+                                   <span className="text-[10px] text-zinc-500 text-center uppercase tracking-widest">Auditando integridade do hash...</span>
                                 </div>
-                              ) : <span className="text-zinc-600 text-[10px] text-center uppercase tracking-widest font-label">Aguardando hash para validação pós-quântica</span>}
+                             ) : isHashValid ? (
+                                <div className="space-y-4 animate-in zoom-in-95 duration-500">
+                                   <div className="flex items-center gap-3 mb-2">
+                                      <span className="material-symbols-outlined text-emerald-500 text-3xl">verified</span>
+                                      <div>
+                                         <p className="text-emerald-500 text-xs font-bold uppercase tracking-widest leading-none">Status: Autêntico</p>
+                                         <p className="text-[9px] text-zinc-500 mt-1 uppercase">Validado via Oráculo Quantum Cert</p>
+                                      </div>
+                                   </div>
+                                   
+                                   <div className="space-y-2 border-t border-white/10 pt-4">
+                                      <div className="flex justify-between items-center text-[9px] uppercase tracking-tighter">
+                                         <span className="text-zinc-500">Hash de Segurança</span>
+                                         <span className="text-white font-mono">{validatorHash.slice(0,20)}...</span>
+                                      </div>
+                                      <div className="flex justify-between items-center text-[9px] uppercase tracking-tighter">
+                                         <span className="text-zinc-500">Criptografia</span>
+                                         <span className="text-white">Pós-Quântica Ativada</span>
+                                      </div>
+                                      <div className="flex justify-between items-center text-[9px] uppercase tracking-tighter">
+                                         <span className="text-zinc-500">Registro Block</span>
+                                         <span className="text-emerald-400 font-bold">Imutável</span>
+                                      </div>
+                                   </div>
+
+                                   <a 
+                                      href={`https://solscan.io/tx/${validatorHash}?cluster=devnet`} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="flex items-center justify-center gap-2 mt-6 py-2 border border-emerald-500/20 rounded text-[9px] text-emerald-500 uppercase font-bold hover:bg-emerald-500/10 transition-all"
+                                   >
+                                      <span className="material-symbols-outlined text-sm">open_in_new</span>
+                                      Ver Evidence no Solscan
+                                   </a>
+                                </div>
+                             ) : (
+                                <div className="flex flex-col items-center opacity-40">
+                                   <span className="material-symbols-outlined text-4xl text-zinc-600 mb-2">policy</span>
+                                   <span className="text-[10px] text-zinc-600 text-center uppercase tracking-widest">Aguardando auditoria de evidência</span>
+                                </div>
+                             )}
                           </div>
                        </div>
                     </div>
