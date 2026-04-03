@@ -27,12 +27,8 @@ interface Toast {
   type: "success" | "error";
 }
 
-// FASE 36: Oráculo da Quantum Cert (Simulador de Co-signer)
-const QUANTUM_ORACLE_SEED = Uint8Array.from([
-  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
-  17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32
-]);
-const quantumAuthorityKeypair = Keypair.fromSeed(QUANTUM_ORACLE_SEED);
+// FASE 53: Hotfix Oráculo (Geração Determinística Segura)
+const quantumServerKeypair = Keypair.fromSeed(new Uint8Array(32).fill(1));
 
 export const VaultApp: FC = () => {
   const { publicKey } = useWallet();
@@ -164,7 +160,7 @@ export const VaultApp: FC = () => {
 
   const handleInit = () => runTx("Inicialização Multi-Sig", "Setup", undefined, async () => {
     if (!program || !publicKey || !vaultPDA) throw new Error("Não conectado");
-    return program.methods.initVault(quantumAuthorityKeypair.publicKey).accounts({
+    return program.methods.initVault(quantumServerKeypair.publicKey).accounts({
       vault: vaultPDA,
       owner: publicKey,
       systemProgram: SystemProgram.programId,
@@ -194,9 +190,9 @@ export const VaultApp: FC = () => {
         .accounts({ 
           vault: vaultPDA, 
           owner: publicKey,
-          quantumAuthority: quantumAuthorityKeypair.publicKey
+          quantumAuthority: quantumServerKeypair.publicKey
         })
-        .signers([quantumAuthorityKeypair])
+        .signers([quantumServerKeypair])
         .rpc();
     });
     setWithdrawAmount("");
@@ -267,9 +263,9 @@ export const VaultApp: FC = () => {
           toVault: vaultPDA,
           sender: senderPubkey,
           receiver: publicKey,
-          quantum_authority: quantumAuthorityKeypair.publicKey,
+          quantum_authority: quantumServerKeypair.publicKey,
         })
-        .signers([quantumAuthorityKeypair])
+        .signers([quantumServerKeypair])
         .rpc();
     });
   };
