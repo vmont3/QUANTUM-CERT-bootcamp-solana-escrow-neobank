@@ -3,11 +3,11 @@
 import dynamic from "next/dynamic";
 import { SolanaProviders } from "../components/SolanaProviders";
 
-// CounterApp usa browser APIs (sessionStorage, wallet), carregamos sem SSR
-const CounterApp = dynamic(
+// VaultApp usa browser APIs (sessionStorage, wallet), carregamos sem SSR
+const VaultApp = dynamic(
   () =>
-    import("../components/CounterApp").then((mod) => ({
-      default: mod.CounterApp,
+    import("../components/VaultApp").then((mod) => ({
+      default: mod.VaultApp,
     })),
   { ssr: false }
 );
@@ -15,7 +15,7 @@ const CounterApp = dynamic(
 export default function Home() {
   return (
     <SolanaProviders>
-      <CounterApp />
+      <VaultApp />
     </SolanaProviders>
   );
 }

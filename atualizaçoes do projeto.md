@@ -1,0 +1,14 @@
+- V1.05.01: Bugfix & UI Restore - Restauração do Branding Neobank, Bump da Seed PDA para vault_v2 e correção tipográfica na suíte de testes
+- V1.05.00: Pivot Escrow Multi-Sig - Implementação de Cofre de Transição On-chain, Testes Anchor e Documentação README
+- V1.03.02: Hotfix - Migração do provedor de Block Explorer oficial para o Solscan devido a instabilidade externa
+- V1.03.01: UX - Adição de link rastreável do Solana Explorer no Card de Certificado Validado
+- V1.03.00: Golden Master - Implementação de Toast Notifications, Integração com Solana Explorer e Validador Visual Ativo
+- V1.02.05: Hotfix Final - Ajuste de case sensitivity na chamada do Anchor (transferP2P)
+- V1.02.04: Bugfix - Correção do IDL method transferP2P e sanitização de vírgula para ponto em inputs financeiros
+- V1.02.03: Hotfix - Correção de importação do módulo BN (BigNumber) para transações de u64
+- V1.02.02: Correção de UX - Roteamento de menu, destravamento de state de transação e internacionalização PT-BR
+- V1.02.01: Clean Code - Refatoração de nomenclatura para VaultApp e melhorias de UX no Validador
+- V1.02.00: Integração do IDL Quantum Vault e refatoração do Frontend React com o novo layout.
+- V1.01.00: Injeção do contrato Quantum Vault e migração oficial para Devnet.
+- V1.01.00: Injeção do contrato Quantum Vault (Neobank e P2P) e deploy exclusivo na Devnet.
+- V1.00.00: Versão base do projeto (Setup e Contrato de Aula)

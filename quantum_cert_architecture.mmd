@@ -1,0 +1,48 @@
+graph TD
+
+    %% Entidades Externas
+    User([Usuário / Empresa])
+    App[Frontend UI / Quantum App]
+    Phantom[Carteira Web3 - Ed25519]
+    Judge([Juiz / Auditor])
+
+    %% Camada de Segurança Off-Chain
+    subgraph Oraculo_Quantum_Cert
+        Falcon[Motor Criptográfico: Falcon-512]
+        Validator[Validador de Identidade e Hash]
+    end
+
+    %% Camada On-Chain (Blockchain Solana)
+    subgraph Solana_L1
+        Diamond{Quantum Vault Central}
+        NeoBank[Faceta 1: Neobank]
+        P2P[Faceta 2: Motor P2P e Escrow]
+        Multi[Faceta 3: Governança Multisig]
+        LogReg[Registro de Logs Imutáveis]
+        AssetValidator[Faceta 4: Validador de Ativos]
+    end
+
+    %% Fluxo de Ações - Transação
+    User --> App
+    App -- 1. Assina Intenção --> Falcon
+    Falcon --> Validator
+    Validator -- 2. Retorna Prova Falcon --> App
+    App -- 3. Assina Transação On-chain --> Phantom
+    Phantom -- 4. Instrução + Prova Falcon --> Diamond
+
+    %% Roteamento do Smart Contract
+    Diamond --> NeoBank
+    Diamond --> P2P
+    Diamond --> Multi
+    Diamond --> AssetValidator
+
+    %% Fluxo de Registro de Ativos
+    NeoBank --> LogReg
+    P2P --> LogReg
+    Multi --> LogReg
+
+    %% Fluxo do Validador de Ativos
+    Judge -- Insere Hash --> App
+    App -- 5. Consulta Transação --> Solana_L1
+    Solana_L1 -- 6. Retorna Logs --> App
+    App -- 7. Valida e Exibe Ativo --> Judge

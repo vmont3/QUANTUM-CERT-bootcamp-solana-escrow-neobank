@@ -2,10 +2,10 @@ import { useMemo } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Program, AnchorProvider, setProvider, Idl } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
-import idl from "./counter_program.json";
+import idl from "./quantum_cert_vault.json";
 
 export const PROGRAM_ID = new PublicKey(
-  "FJKTbA7i4yVJoecGh2w1nmRQgRrVQpaGa1VvBz6Ug2HP"
+  "HDXeLKERZhsXiFxAddtpfMhFpBt4bmSAYuLeBwNAWqms"
 );
 
 export function useProgram() {

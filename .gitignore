@@ -5,3 +5,9 @@ target
 node_modules
 test-ledger
 .yarn
+*.tar.bz2
+solana-release/
+validator.log
+.next/
+dist/
+build/
