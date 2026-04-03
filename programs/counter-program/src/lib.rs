@@ -129,7 +129,7 @@ pub struct LockEscrow<'info> {
         init,
         payer = sender,
         space = 8 + 32 + 32 + 8 + 4 + item_description.len() + 1 + 32,
-        seeds = [b"escrow_v2", sender.key().as_ref(), receiver.key().as_ref()],
+        seeds = [b"escrow_v3", sender.key().as_ref(), receiver.key().as_ref()],
         bump
     )]
     pub escrow: Account<'info, EscrowAccount>,
@@ -142,7 +142,7 @@ pub struct LockEscrow<'info> {
 
 #[derive(Accounts)]
 pub struct ReleaseEscrow<'info> {
-    #[account(mut, seeds = [b"escrow_v2", sender.key().as_ref(), receiver.key().as_ref()], bump)]
+    #[account(mut, seeds = [b"escrow_v3", sender.key().as_ref(), receiver.key().as_ref()], bump)]
     pub escrow: Account<'info, EscrowAccount>,
     #[account(mut, seeds = [b"vault_v3", receiver.key().as_ref()], bump)]
     pub to_vault: Account<'info, VaultAccount>,

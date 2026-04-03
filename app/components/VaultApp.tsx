@@ -63,7 +63,7 @@ export const VaultApp: FC = () => {
 
   const [validatorHash, setValidatorHash] = useState("");
 
-  // PDA calculation - FASE 40.2: Semente vault_v2
+  // PDA calculation - FASE 55: Semente vault_v3
   const vaultPDA = useMemo(() => {
     if (!publicKey || !program) return null;
     const [pda] = PublicKey.findProgramAddressSync(
@@ -207,7 +207,7 @@ export const VaultApp: FC = () => {
       if (!program || !publicKey || !vaultPDA) throw new Error("Não conectado");
       const targetPubkey = new PublicKey(escrowTarget);
       const [escrowPDA] = PublicKey.findProgramAddressSync(
-        [Buffer.from("escrow_v2"), publicKey.toBuffer(), targetPubkey.toBuffer()],
+        [Buffer.from("escrow_v3"), publicKey.toBuffer(), targetPubkey.toBuffer()],
         program.programId
       );
       
@@ -253,7 +253,7 @@ export const VaultApp: FC = () => {
       if (!program || !publicKey || !vaultPDA) throw new Error("Não conectado");
       const senderPubkey = new PublicKey(sender);
       const [escrowPDA] = PublicKey.findProgramAddressSync(
-        [Buffer.from("escrow_v2"), senderPubkey.toBuffer(), publicKey.toBuffer()],
+        [Buffer.from("escrow_v3"), senderPubkey.toBuffer(), publicKey.toBuffer()],
         program.programId
       );
       
@@ -416,14 +416,14 @@ export const VaultApp: FC = () => {
             </div>
           ) : !initialized ? (
             <div className="flex flex-col items-center justify-center py-20 bg-[#1b1b1b] rounded-lg border border-white/5">
-                <h3 className="text-2xl font-bold text-white mb-4 tracking-tighter">Cofre de Transição V2</h3>
+                <h3 className="text-2xl font-bold text-white mb-4 tracking-tighter">Cofre de Transição V3</h3>
                 <p className="text-zinc-500 mb-8 max-w-xs text-center font-label text-sm">Ative sua nova conta protegida para habilitar as funções do Neobank Pós-Quântico.</p>
                 <button 
                   onClick={handleInit}
                   disabled={txStatus === "loading"}
                   className="bg-white text-black font-bold py-4 px-10 rounded-sm hover:bg-zinc-200 transition-all active:scale-95 disabled:opacity-50 font-label"
                 >
-                  {txStatus === "loading" ? "INICIALIZANDO..." : "INICIALIZAR COFRE V2"}
+                  {txStatus === "loading" ? "INICIALIZANDO..." : "INICIALIZAR COFRE V3"}
                 </button>
             </div>
           ) : (
