@@ -670,46 +670,57 @@ export const VaultApp: FC = () => {
                              </button>
                           </div>
 
-                          <div className={`relative p-8 rounded border ${isHashValid ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-white/5 bg-black/40'} transition-all min-h-[200px] flex flex-col justify-center`}>
+                          <div className={`relative p-1 rounded-2xl ${isHashValid ? 'bg-gradient-to-br from-emerald-500/20 to-transparent' : 'bg-[#1b1b1b]'} transition-all min-h-[400px] flex flex-col justify-center overflow-hidden`}>
                              {isValidating ? (
                                 <div className="flex flex-col items-center">
-                                   <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin mb-4"></div>
-                                   <span className="text-[10px] text-zinc-500 text-center uppercase tracking-widest">Auditando integridade do hash...</span>
+                                   <div className="w-12 h-12 border-2 border-primary/20 border-t-primary rounded-full animate-spin mb-4 shadow-[0_0_15px_rgba(212,175,55,0.2)]"></div>
+                                   <span className="text-[10px] text-zinc-500 text-center uppercase tracking-[0.3em] font-label">Motor Falcon-512 Auditando...</span>
                                 </div>
                              ) : isHashValid ? (
-                                <div className="space-y-4 animate-in zoom-in-95 duration-500">
-                                   <div className="flex items-center gap-3 mb-2">
-                                      <span className="material-symbols-outlined text-emerald-500 text-3xl">verified</span>
-                                      <div>
-                                         <p className="text-emerald-500 text-xs font-bold uppercase tracking-widest leading-none">Status: Autêntico</p>
-                                         <p className="text-[9px] text-zinc-500 mt-1 uppercase">Validado via Oráculo Quantum Cert</p>
-                                      </div>
-                                   </div>
+                                <div className="bg-[#111111] rounded-2xl p-8 border border-white/5 shadow-2xl animate-in zoom-in-95 duration-500 overflow-hidden relative h-full flex flex-col">
+                                   {/* Overlay Gradient Brilhante */}
+                                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent"></div>
                                    
-                                   <div className="space-y-2 border-t border-white/10 pt-4">
-                                      <div className="flex justify-between items-center text-[9px] uppercase tracking-tighter">
-                                         <span className="text-zinc-500">Hash de Segurança</span>
-                                         <span className="text-white font-mono">{validatorHash.slice(0,20)}...</span>
+                                   <div className="flex flex-col items-center text-center flex-1 justify-center">
+                                      <div className="mb-6 flex flex-col items-center">
+                                         <Image src="/logo.png" alt="Quantum Cert" width={32} height={32} className="mb-2" />
+                                         <span className="text-[10px] text-zinc-500 tracking-[0.4em] font-bold uppercase">Quantum Cert</span>
                                       </div>
-                                      <div className="flex justify-between items-center text-[9px] uppercase tracking-tighter">
-                                         <span className="text-zinc-500">Criptografia</span>
-                                         <span className="text-white">Pós-Quântica Ativada</span>
+
+                                      <div className="w-20 h-20 bg-green-900/20 rounded-full flex items-center justify-center mb-6 relative">
+                                         <div className="absolute inset-0 bg-emerald-500/10 rounded-full animate-ping opacity-20"></div>
+                                         <span className="material-symbols-outlined text-emerald-400 text-5xl">check</span>
                                       </div>
-                                      <div className="flex justify-between items-center text-[9px] uppercase tracking-tighter">
-                                         <span className="text-zinc-500">Registro Block</span>
-                                         <span className="text-emerald-400 font-bold">Imutável</span>
+
+                                      <span className="text-emerald-400 text-[10px] font-bold tracking-[0.5em] uppercase mb-1">Autenticidade Confirmada</span>
+                                      <h2 className="text-white text-3xl font-bold tracking-tighter mb-2">Produto Verificado</h2>
+                                      <p className="text-zinc-400 text-sm max-w-[280px] leading-relaxed mb-8">
+                                         Este item foi verificado com sucesso na blockchain Quantum Cert.
+                                      </p>
+
+                                      <div className="w-full bg-[#1a1a1a] rounded-xl p-4 space-y-3">
+                                         <div className="flex justify-between items-center text-[10px] uppercase tracking-tighter">
+                                            <span className="text-zinc-500 font-bold">ID do Ativo</span>
+                                            <span className="text-zinc-200 font-mono">{validatorHash.slice(0, 12)}...{validatorHash.slice(-4)}</span>
+                                         </div>
+                                         <div className="flex justify-between items-center text-[10px] uppercase tracking-tighter">
+                                            <span className="text-zinc-500 font-bold">Data da Validação</span>
+                                            <span className="text-zinc-200">{new Date().toLocaleDateString('pt-BR')}</span>
+                                         </div>
+                                         <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                                            <span className="text-[10px] text-zinc-500 uppercase tracking-tighter font-bold">Registro Imutável</span>
+                                            <a 
+                                               href={`https://solscan.io/tx/${validatorHash}?cluster=devnet`}
+                                               target="_blank"
+                                               rel="noopener noreferrer"
+                                               className="text-emerald-400 text-[10px] uppercase font-bold flex items-center gap-1 hover:text-emerald-300 transition-colors"
+                                            >
+                                               Ver no Solscan
+                                               <span className="material-symbols-outlined text-[10px]">arrow_outward</span>
+                                            </a>
+                                         </div>
                                       </div>
                                    </div>
-
-                                   <a 
-                                      href={`https://solscan.io/tx/${validatorHash}?cluster=devnet`} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
-                                      className="flex items-center justify-center gap-2 mt-6 py-2 border border-emerald-500/20 rounded text-[9px] text-emerald-500 uppercase font-bold hover:bg-emerald-500/10 transition-all"
-                                   >
-                                      <span className="material-symbols-outlined text-sm">open_in_new</span>
-                                      Ver Evidence no Solscan
-                                   </a>
                                 </div>
                              ) : (
                                 <div className="flex flex-col items-center opacity-40">
