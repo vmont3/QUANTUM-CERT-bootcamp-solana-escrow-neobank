@@ -1,3 +1,4 @@
+- V1.05.02: Hotfix final de Sincronização - Buffer de semente PDA atualizado para 'vault_v2' no frontend (VaultApp.tsx)
 - V1.05.01: Bugfix & UI Restore - Restauração do Branding Neobank, Bump da Seed PDA para vault_v2 e correção tipográfica na suíte de testes
 - V1.05.00: Pivot Escrow Multi-Sig - Implementação de Cofre de Transição On-chain, Testes Anchor e Documentação README
 - V1.03.02: Hotfix - Migração do provedor de Block Explorer oficial para o Solscan devido a instabilidade externa
