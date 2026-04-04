@@ -27,21 +27,44 @@ interface Toast {
 }
 
 // FASE 53: Hotfix Oráculo (Geração Determinística Segura)
-const quantumServerKeypair = Keypair.fromSeed(new Uint8Array(32).fill(1));
+// Oráculo de Bolso PoC: Chave determinística para co-assinatura (FASE 73)
+const ORACLE_SEED = new Uint8Array([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]);
+const oracleKeypair = Keypair.fromSeed(ORACLE_SEED);
 
 export const VaultApp: FC = () => {
-  const { publicKey, select, wallets, disconnect } = useWallet();
+  const { publicKey, select, disconnect } = useWallet();
   const { connection } = useConnection();
   const { program } = useProgram();
 
-  const handleWalletConnect = () => {
+  const [isHoveringWallet, setIsHoveringWallet] = useState(false);
+  const [connectingExt, setConnectingExt] = useState(false);
+
+  const handleWalletConnect = async () => {
     if (publicKey) {
       disconnect();
-    } else {
-      const phantom = wallets.find(w => w.adapter.name === 'Phantom');
-      if (phantom) {
-        select(phantom.adapter.name);
+      return;
+    }
+    try {
+      setConnectingExt(true);
+      const provider = (window as any)?.phantom?.solana;
+      if (provider?.isPhantom) {
+        // Abre a carteira nativamente
+        await provider.connect(); 
+        // Avisa o hook do React para assumir a Phantom na memória local
+        select('Phantom' as any);
+        
+        // Timeout de segurança: Se o React não hidratar a tela em meio segundo, forçamos o reload. 
+        // Como o autoConnect agora está ATIVO, o reload voltará 100% conectado.
+        setTimeout(() => {
+           if (!publicKey) {
+              window.location.reload(); 
+           }
+        }, 500);
       }
+    } catch (error) {
+      console.error("Falha:", error);
+    } finally {
+      setConnectingExt(false);
     }
   };
 
@@ -131,19 +154,16 @@ export const VaultApp: FC = () => {
     const bal = await connection.getBalance(publicKey);
     setSolBalance(bal / LAMPORTS_PER_SOL);
 
-    // Buscar Escrows Pendentes (Inbox)
+    // Buscar Escrows Pendentes (Inbox) (FASE 73 - All Filter)
     try {
-      const allEscrows = await (program.account as any).escrowAccount.all([
-        {
-          memcmp: {
-            offset: 40, // receiver @ 40
-            bytes: publicKey.toBase58(),
-          }
-        }
-      ]);
-      setPendingEscrows(allEscrows.filter((e: any) => !e.account.isCompleted));
+      // O all() do Anchor filtra por discriminador e evita RangeError nativamente
+      const allEscrows = await program.account.escrowAccount.all();
+      const myEscrows = allEscrows.filter(e => 
+        e.account.receiver.toBase58() === publicKey.toBase58() && !e.account.isCompleted
+      );
+      setPendingEscrows(myEscrows);
     } catch (e) {
-      console.error("Inbox fetch error:", e);
+      console.warn("Ignorando contas incompatíveis no fetch (Bypass PoC):", e);
     }
     // Carregar Inventário Híbrido (localStorage mock)
     const localData = localStorage.getItem("quantum_assets");
@@ -176,7 +196,7 @@ export const VaultApp: FC = () => {
 
   const handleInit = () => runTx("Inicialização Multi-Sig", "Setup", undefined, async () => {
     if (!program || !publicKey || !vaultPDA) throw new Error("Não conectado");
-    return program.methods.initVault(quantumServerKeypair.publicKey).accounts({
+    return program.methods.initVault(oracleKeypair.publicKey).accounts({
       vault: vaultPDA,
       owner: publicKey,
       systemProgram: SystemProgram.programId,
@@ -206,9 +226,9 @@ export const VaultApp: FC = () => {
         .accounts({ 
           vault: vaultPDA, 
           owner: publicKey,
-          quantumAuthority: quantumServerKeypair.publicKey
+          quantumAuthority: oracleKeypair.publicKey
         })
-        .signers([quantumServerKeypair])
+        .signers([oracleKeypair])
         .rpc();
     });
     setWithdrawAmount("");
@@ -280,9 +300,9 @@ export const VaultApp: FC = () => {
           toVault: vaultPDA,
           sender: senderPubKey,
           receiver: publicKey,
-          quantum_authority: quantumServerKeypair.publicKey,
+          quantumAuthority: oracleKeypair.publicKey,
         })
-        .signers([quantumServerKeypair])
+        .signers([oracleKeypair])
         .rpc();
     });
   };
@@ -372,10 +392,20 @@ export const VaultApp: FC = () => {
              <div className="flex items-center gap-3">
                <button 
                  onClick={handleWalletConnect}
+                 onMouseEnter={() => setIsHoveringWallet(true)}
+                 onMouseLeave={() => setIsHoveringWallet(false)}
                  className="flex items-center gap-3 bg-[#1b1b1b] border border-white/20 hover:border-white/40 hover:bg-white/5 text-white font-label font-bold py-2.5 px-6 rounded-sm transition-all text-xs uppercase tracking-widest shadow-lg"
                >
                  <img src="/logo.png" width={18} height={18} alt="QC" className="grayscale opacity-80" />
-                 {publicKey ? `${publicKey.toBase58().slice(0, 4)}...${publicKey.toBase58().slice(-4)}` : "Conectar Carteira"}
+                 {publicKey ? (
+                   isHoveringWallet ? (
+                     <span className="text-red-400">DESCONECTAR</span>
+                   ) : (
+                     `${publicKey.toBase58().slice(0, 4)}...${publicKey.toBase58().slice(-4)}`
+                   )
+                 ) : (
+                   connectingExt ? "Conectando..." : "Conectar Carteira"
+                 )}
                </button>
              </div>
            )}

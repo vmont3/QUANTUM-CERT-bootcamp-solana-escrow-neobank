@@ -30,7 +30,7 @@ export const SolanaProviders: FC<{ children: ReactNode }> = ({ children }) => {
 
   return (
     <ConnectionProvider endpoint={NETWORK_ENDPOINT}>
-      <WalletProvider wallets={wallets} autoConnect={false} onError={onError}>
+      <WalletProvider wallets={wallets} autoConnect={true} onError={onError}>
         <WalletModalProvider>{children}</WalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>

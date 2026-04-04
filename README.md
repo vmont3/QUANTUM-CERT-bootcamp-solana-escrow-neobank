@@ -63,9 +63,13 @@ Isso garante que a infraestrutura responsável por auditar e gerar os "Passaport
   * `lock_escrow`: Transfere fundos do Vault para um PDA de Escrow amarrado a um Recebedor.
   * `release_escrow`: Desbloqueia fundos do Escrow para o Recebedor (Requer assinatura do Recebedor + Oráculo).
 
+## 🔐 Oráculo e Co-assinatura (PoC Mode)
+
+Para esta Prova de Conceito (PoC), o agente do Oráculo está operando de forma mockada (simulada) diretamente no client-side para facilitar a avaliação. Na arquitetura final de produção, o Oráculo Pós-Quântico reside em um ambiente TEE (Trusted Execution Environment) totalmente isolado no backend, garantindo que as chaves de co-assinatura jamais sejam expostas.
+
 ---
 
-## 🧪 Como Rodar e Testar
+## 🛠️ Como Iniciar e Testar
 
 ### 1. Rodando a Suíte de Testes Automatizados (Critério de Avaliação)
 Nosso projeto possui testes completos validando inicialização, depósitos, saques e falhas de segurança propositais (Multi-sig rejection).
