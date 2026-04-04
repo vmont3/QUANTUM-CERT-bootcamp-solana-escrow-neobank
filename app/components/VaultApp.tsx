@@ -2,7 +2,6 @@
 
 import { FC, useState, useCallback, useEffect, useMemo } from "react";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { PublicKey, SystemProgram, LAMPORTS_PER_SOL, Keypair } from "@solana/web3.js";
 import { BN } from "@coral-xyz/anchor";
 import Image from "next/image";
@@ -31,9 +30,21 @@ interface Toast {
 const quantumServerKeypair = Keypair.fromSeed(new Uint8Array(32).fill(1));
 
 export const VaultApp: FC = () => {
-  const { publicKey } = useWallet();
+  const { publicKey, select, wallets, disconnect } = useWallet();
   const { connection } = useConnection();
   const { program } = useProgram();
+
+  const handleWalletConnect = () => {
+    if (publicKey) {
+      disconnect();
+    } else {
+      const phantom = wallets.find(w => w.adapter.name === 'Phantom');
+      if (phantom) {
+        select(phantom.adapter.name);
+      }
+    }
+  };
+
 
   // State
   const [activeTab, setActiveTab] = useState<Tab>("vault");
@@ -62,12 +73,17 @@ export const VaultApp: FC = () => {
   const [hybridAssets, setHybridAssets] = useState<any[]>([]);
 
   const [validatorHash, setValidatorHash] = useState("");
+  const [mounted, setMounted] = useState(false);
 
-  // PDA calculation - FASE 55: Semente vault_v3
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // PDA calculation - FASE 99: Semente vault_v5
   const vaultPDA = useMemo(() => {
     if (!publicKey || !program) return null;
     const [vaultPDA] = PublicKey.findProgramAddressSync(
-      [Buffer.from("vault_v3"), publicKey.toBuffer()],
+      [Buffer.from("vault_master"), publicKey.toBuffer()],
       program.programId
     );
     return vaultPDA;
@@ -207,7 +223,7 @@ export const VaultApp: FC = () => {
       if (!program || !publicKey || !vaultPDA) throw new Error("Não conectado");
       const receiverPubKey = new PublicKey(escrowTarget);
       const [escrowPDA] = PublicKey.findProgramAddressSync(
-        [Buffer.from("escrow_v3"), publicKey.toBuffer(), receiverPubKey.toBuffer()],
+        [Buffer.from("escrow_master"), publicKey.toBuffer(), receiverPubKey.toBuffer()],
         program.programId
       );
       
@@ -254,7 +270,7 @@ export const VaultApp: FC = () => {
       const receiverPubKey = new PublicKey(publicKey.toString());
       const senderPubKey = new PublicKey(sender);
       const [escrowPDA] = PublicKey.findProgramAddressSync(
-        [Buffer.from("escrow_v3"), senderPubKey.toBuffer(), publicKey.toBuffer()],
+        [Buffer.from("escrow_master"), senderPubKey.toBuffer(), publicKey.toBuffer()],
         program.programId
       );
       
@@ -352,7 +368,17 @@ export const VaultApp: FC = () => {
                 <span className="text-sm font-bold text-primary">{solBalance.toFixed(3)} SOL</span>
              </div>
            )}
-           <WalletMultiButton />
+           {mounted && (
+             <div className="flex items-center gap-3">
+               <button 
+                 onClick={handleWalletConnect}
+                 className="flex items-center gap-3 bg-[#1b1b1b] border border-white/20 hover:border-white/40 hover:bg-white/5 text-white font-label font-bold py-2.5 px-6 rounded-sm transition-all text-xs uppercase tracking-widest shadow-lg"
+               >
+                 <img src="/logo.png" width={18} height={18} alt="QC" className="grayscale opacity-80" />
+                 {publicKey ? `${publicKey.toBase58().slice(0, 4)}...${publicKey.toBase58().slice(-4)}` : "Conectar Carteira"}
+               </button>
+             </div>
+           )}
         </div>
       </header>
 
@@ -363,7 +389,7 @@ export const VaultApp: FC = () => {
             <span className="text-xs uppercase tracking-widest text-zinc-600 font-label">Status da Rede</span>
             <div className="flex items-center gap-2 mt-1">
               <div className="w-2 h-2 rounded-full bg-white shadow-[0_0_8px_#ffffff]"></div>
-              <span className="text-sm font-label text-zinc-400">Devnet // V2 Account</span>
+              <span className="text-sm font-label text-zinc-400">Devnet // Master Account</span>
             </div>
           </div>
           <nav className="flex flex-col gap-2">
@@ -417,14 +443,14 @@ export const VaultApp: FC = () => {
             </div>
           ) : !initialized ? (
             <div className="flex flex-col items-center justify-center py-20 bg-[#1b1b1b] rounded-lg border border-white/5">
-                <h3 className="text-2xl font-bold text-white mb-4 tracking-tighter">Cofre de Transição V3</h3>
+                <h3 className="text-2xl font-bold text-white mb-4 tracking-tighter">Cofre de Segurança Master</h3>
                 <p className="text-zinc-500 mb-8 max-w-xs text-center font-label text-sm">Ative sua nova conta protegida para habilitar as funções do Neobank Pós-Quântico.</p>
                 <button 
                   onClick={handleInit}
                   disabled={txStatus === "loading"}
                   className="bg-white text-black font-bold py-4 px-10 rounded-sm hover:bg-zinc-200 transition-all active:scale-95 disabled:opacity-50 font-label"
                 >
-                  {txStatus === "loading" ? "INICIALIZANDO..." : "INICIALIZAR COFRE V3"}
+                  {txStatus === "loading" ? "INICIALIZANDO..." : "INICIALIZAR COFRE MASTER"}
                 </button>
             </div>
           ) : (
@@ -498,7 +524,7 @@ export const VaultApp: FC = () => {
 
                     <div className="lg:col-span-4 space-y-6">
                         <div className="bg-[#1b1b1b] p-6 rounded-lg border border-white/5 font-label">
-                          <h4 className="text-[10px] uppercase text-zinc-500 tracking-widest mb-4">Master PDA V2</h4>
+                          <h4 className="text-[10px] uppercase text-zinc-500 tracking-widest mb-4">Master PDA Logic</h4>
                           <div className="bg-white/5 p-4 rounded text-[10px] font-mono text-zinc-500 break-all leading-tight">
                               {vaultPDA?.toString()}
                           </div>

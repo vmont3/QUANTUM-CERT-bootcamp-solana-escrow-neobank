@@ -10,34 +10,61 @@ describe("quantum_cert_vault_escrow", () => {
 
   const program = anchor.workspace.QuantumCertVault as Program<QuantumCertVault>;
   
-  const owner = provider.wallet.publicKey;
+  const providerWallet = provider.wallet.publicKey;
+  const owner = Keypair.generate(); // Novo owner aleatório para isolamento total
   const receiver = Keypair.generate();
-  const oracle = Keypair.generate();
+  const oracle = Keypair.fromSeed(new Uint8Array(32).fill(1));
 
-  // FASE 40.2: Bump para vault_v2
+  // PDAs baseados no novo owner
   const [vaultPDA] = PublicKey.findProgramAddressSync(
-    [Buffer.from("vault_v2"), owner.toBuffer()],
+    [Buffer.from("vault_master"), owner.publicKey.toBuffer()],
     program.programId
   );
 
   const [receiverVaultPDA] = PublicKey.findProgramAddressSync(
-    [Buffer.from("vault_v2"), receiver.publicKey.toBuffer()],
+    [Buffer.from("vault_master"), receiver.publicKey.toBuffer()],
     program.programId
   );
 
   const [escrowPDA] = PublicKey.findProgramAddressSync(
-    [Buffer.from("escrow_v2"), owner.toBuffer(), receiver.publicKey.toBuffer()],
+    [Buffer.from("escrow_master"), owner.publicKey.toBuffer(), receiver.publicKey.toBuffer()],
     program.programId
   );
+
+  console.log("MASTER TEST: Vault PDA:", vaultPDA.toBase58());
+  console.log("MASTER TEST: Escrow PDA:", escrowPDA.toBase58());
+
+  before(async () => {
+    // Financiar o RANDOM OWNER, RECEIVER e ORACLE a partir da carteira CLI
+    const transaction = new anchor.web3.Transaction().add(
+      anchor.web3.SystemProgram.transfer({
+        fromPubkey: providerWallet,
+        toPubkey: owner.publicKey,
+        lamports: 2.1 * LAMPORTS_PER_SOL,
+      }),
+      anchor.web3.SystemProgram.transfer({
+        fromPubkey: providerWallet,
+        toPubkey: receiver.publicKey,
+        lamports: 0.1 * LAMPORTS_PER_SOL,
+      }),
+      anchor.web3.SystemProgram.transfer({
+        fromPubkey: providerWallet,
+        toPubkey: oracle.publicKey,
+        lamports: 0.1 * LAMPORTS_PER_SOL,
+      })
+    );
+    await provider.sendAndConfirm(transaction);
+  });
 
   it("Habilita o Neobank Vault V2 com Multi-Sig", async () => {
     await program.methods
       .initVault(oracle.publicKey)
       .accounts({
         vault: vaultPDA,
-        owner: owner,
+        owner: owner.publicKey,
         systemProgram: SystemProgram.programId,
-      } as any) // Use as any if IDL is not yet updated in types
+      } as any)
+      .signers([owner])
       .rpc();
 
     const vaultAcc = await program.account.vaultAccount.fetch(vaultPDA);
@@ -50,9 +77,10 @@ describe("quantum_cert_vault_escrow", () => {
       .deposit(amount)
       .accounts({
         vault: vaultPDA,
-        owner: owner,
+        owner: owner.publicKey,
         systemProgram: SystemProgram.programId,
       } as any)
+      .signers([owner])
       .rpc();
 
     const vaultAcc = await program.account.vaultAccount.fetch(vaultPDA);
@@ -68,10 +96,11 @@ describe("quantum_cert_vault_escrow", () => {
       .accounts({
         fromVault: vaultPDA,
         escrow: escrowPDA,
-        sender: owner,
+        sender: owner.publicKey,
         receiver: receiver.publicKey,
         systemProgram: SystemProgram.programId,
       } as any)
+      .signers([owner])
       .rpc();
 
     const vaultAcc = await program.account.vaultAccount.fetch(vaultPDA);
@@ -100,7 +129,7 @@ describe("quantum_cert_vault_escrow", () => {
       .accounts({
         escrow: escrowPDA,
         toVault: receiverVaultPDA,
-        sender: owner,
+        sender: owner.publicKey,
         receiver: receiver.publicKey,
         quantumAuthority: oracle.publicKey,
       } as any)

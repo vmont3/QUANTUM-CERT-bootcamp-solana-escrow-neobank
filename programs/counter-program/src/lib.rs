@@ -62,27 +62,25 @@ pub mod quantum_cert_vault {
         **from_vault.to_account_info().try_borrow_mut_lamports()? -= amount;
         **escrow.to_account_info().try_borrow_mut_lamports()? += amount;
 
-        msg!("Escrow Locked: {} lamports for {}", amount, escrow.item_description);
         Ok(())
     }
 
     pub fn release_escrow(ctx: Context<ReleaseEscrow>) -> Result<()> {
         let escrow = &mut ctx.accounts.escrow;
         let to_vault = &mut ctx.accounts.to_vault;
+        let amount = escrow.amount;
 
-        require_keys_eq!(ctx.accounts.receiver.key(), escrow.receiver, ErrorCode::UnauthorizedReceiver);
         require_keys_eq!(ctx.accounts.quantum_authority.key(), escrow.quantum_authority, ErrorCode::UnauthorizedAuthority);
-
         if escrow.is_completed { return err!(ErrorCode::EscrowAlreadyCompleted); }
 
-        let amount = escrow.amount;
-        to_vault.balance = to_vault.balance.checked_add(amount).ok_or(ErrorCode::Overflow)?;
         escrow.is_completed = true;
 
         **escrow.to_account_info().try_borrow_mut_lamports()? -= amount;
         **to_vault.to_account_info().try_borrow_mut_lamports()? += amount;
+        
+        to_vault.balance = to_vault.balance.checked_add(amount).ok_or(ErrorCode::Overflow)?;
 
-        msg!("Escrow Released: {} lamports to {}", amount, to_vault.owner);
+        msg!("Escrow Released: {} lamports", amount);
         Ok(())
     }
 }
@@ -92,8 +90,8 @@ pub struct InitVault<'info> {
     #[account(
         init,
         payer = owner,
-        space = 8 + 32 + 32 + 8,
-        seeds = [b"vault_v3", owner.key().as_ref()],
+        space = 8 + 32 + 32 + 8 + 1 + 1,
+        seeds = [b"vault_master", owner.key().as_ref()],
         bump
     )]
     pub vault: Account<'info, VaultAccount>,
@@ -104,7 +102,7 @@ pub struct InitVault<'info> {
 
 #[derive(Accounts)]
 pub struct Deposit<'info> {
-    #[account(mut, seeds = [b"vault_v3", owner.key().as_ref()], bump)]
+    #[account(mut, seeds = [b"vault_master", owner.key().as_ref()], bump)]
     pub vault: Account<'info, VaultAccount>,
     #[account(mut)]
     pub owner: Signer<'info>,
@@ -113,7 +111,7 @@ pub struct Deposit<'info> {
 
 #[derive(Accounts)]
 pub struct Withdraw<'info> {
-    #[account(mut, seeds = [b"vault_v3", owner.key().as_ref()], bump)]
+    #[account(mut, seeds = [b"vault_master", owner.key().as_ref()], bump)]
     pub vault: Account<'info, VaultAccount>,
     #[account(mut)]
     pub owner: Signer<'info>,
@@ -123,16 +121,16 @@ pub struct Withdraw<'info> {
 #[derive(Accounts)]
 #[instruction(amount: u64, item_description: String)]
 pub struct LockEscrow<'info> {
-    #[account(mut, seeds = [b"vault_v3", sender.key().as_ref()], bump)]
+    #[account(mut, seeds = [b"vault_master", sender.key().as_ref()], bump)]
     pub from_vault: Account<'info, VaultAccount>,
-#[account(
-    init,
-    payer = sender,
-    space = 8 + 32 + 32 + 8 + 256,
-    seeds = [b"escrow_v3", sender.key().as_ref(), receiver.key().as_ref()],
-    bump
-)]
-pub escrow: Account<'info, EscrowAccount>,
+    #[account(
+        init,
+        payer = sender,
+        space = 8 + 32 + 32 + 8 + 32 + 256 + 1,
+        seeds = [b"escrow_master", sender.key().as_ref(), receiver.key().as_ref()],
+        bump
+    )]
+    pub escrow: Account<'info, EscrowAccount>,
     #[account(mut)]
     pub sender: Signer<'info>,
     /// CHECK: Target receiver
@@ -142,9 +140,9 @@ pub escrow: Account<'info, EscrowAccount>,
 
 #[derive(Accounts)]
 pub struct ReleaseEscrow<'info> {
-    #[account(mut, seeds = [b"escrow_v3", sender.key().as_ref(), receiver.key().as_ref()], bump)]
+    #[account(mut, seeds = [b"escrow_master", sender.key().as_ref(), receiver.key().as_ref()], bump)]
     pub escrow: Account<'info, EscrowAccount>,
-    #[account(mut, seeds = [b"vault_v3", receiver.key().as_ref()], bump)]
+    #[account(mut, seeds = [b"vault_master", receiver.key().as_ref()], bump)]
     pub to_vault: Account<'info, VaultAccount>,
     /// CHECK: Sender pubkey for PDA seed
     pub sender: UncheckedAccount<'info>,
@@ -165,26 +163,24 @@ pub struct VaultAccount {
 pub struct EscrowAccount {
     pub sender: Pubkey,
     pub receiver: Pubkey,
+    pub quantum_authority: Pubkey,
     pub amount: u64,
     pub item_description: String,
     pub is_completed: bool,
-    pub quantum_authority: Pubkey,
 }
 
 #[error_code]
 pub enum ErrorCode {
-    #[msg("Cálculo resultou em overflow.")]
-    Overflow,
-    #[msg("Cálculo resultou em underflow.")]
-    Underflow,
     #[msg("Saldo insuficiente.")]
     InsufficientFunds,
-    #[msg("O cofre está congelado por segurança pós-quântica.")]
+    #[msg("Cofre congelado.")]
     VaultFrozen,
-    #[msg("Autoridade Quantum não autorizada.")]
+    #[msg("Autoridade não autorizada.")]
     UnauthorizedAuthority,
-    #[msg("Recebedor não autorizado.")]
-    UnauthorizedReceiver,
-    #[msg("Este Escrow já foi finalizado.")]
+    #[msg("Erro de overflow.")]
+    Overflow,
+    #[msg("Erro de underflow.")]
+    Underflow,
+    #[msg("Escrow já finalizado.")]
     EscrowAlreadyCompleted,
 }

@@ -34,8 +34,12 @@
                   108,
                   116,
                   95,
-                  118,
-                  51
+                  109,
+                  97,
+                  115,
+                  116,
+                  101,
+                  114
                 ]
               },
               {
@@ -89,8 +93,12 @@
                   108,
                   116,
                   95,
-                  118,
-                  51
+                  109,
+                  97,
+                  115,
+                  116,
+                  101,
+                  114
                 ]
               },
               {
@@ -144,8 +152,12 @@
                   108,
                   116,
                   95,
-                  118,
-                  51
+                  109,
+                  97,
+                  115,
+                  116,
+                  101,
+                  114
                 ]
               },
               {
@@ -170,8 +182,12 @@
                   111,
                   119,
                   95,
-                  118,
-                  51
+                  109,
+                  97,
+                  115,
+                  116,
+                  101,
+                  114
                 ]
               },
               {
@@ -237,8 +253,12 @@
                   111,
                   119,
                   95,
-                  118,
-                  51
+                  109,
+                  97,
+                  115,
+                  116,
+                  101,
+                  114
                 ]
               },
               {
@@ -266,8 +286,12 @@
                   108,
                   116,
                   95,
-                  118,
-                  51
+                  109,
+                  97,
+                  115,
+                  116,
+                  101,
+                  114
                 ]
               },
               {
@@ -318,8 +342,12 @@
                   108,
                   116,
                   95,
-                  118,
-                  51
+                  109,
+                  97,
+                  115,
+                  116,
+                  101,
+                  114
                 ]
               },
               {
@@ -378,38 +406,33 @@
   "errors": [
     {
       "code": 6000,
-      "name": "Overflow",
-      "msg": "Cálculo resultou em overflow."
-    },
-    {
-      "code": 6001,
-      "name": "Underflow",
-      "msg": "Cálculo resultou em underflow."
-    },
-    {
-      "code": 6002,
       "name": "InsufficientFunds",
       "msg": "Saldo insuficiente."
     },
     {
-      "code": 6003,
+      "code": 6001,
       "name": "VaultFrozen",
-      "msg": "O cofre está congelado por segurança pós-quântica."
+      "msg": "Cofre congelado."
+    },
+    {
+      "code": 6002,
+      "name": "UnauthorizedAuthority",
+      "msg": "Autoridade não autorizada."
+    },
+    {
+      "code": 6003,
+      "name": "Overflow",
+      "msg": "Erro de overflow."
     },
     {
       "code": 6004,
-      "name": "UnauthorizedAuthority",
-      "msg": "Autoridade Quantum não autorizada."
+      "name": "Underflow",
+      "msg": "Erro de underflow."
     },
     {
       "code": 6005,
-      "name": "UnauthorizedReceiver",
-      "msg": "Recebedor não autorizado."
-    },
-    {
-      "code": 6006,
       "name": "EscrowAlreadyCompleted",
-      "msg": "Este Escrow já foi finalizado."
+      "msg": "Escrow já finalizado."
     }
   ],
   "types": [
@@ -427,6 +450,10 @@
             "type": "pubkey"
           },
           {
+            "name": "quantum_authority",
+            "type": "pubkey"
+          },
+          {
             "name": "amount",
             "type": "u64"
           },
@@ -437,10 +464,6 @@
           {
             "name": "is_completed",
             "type": "bool"
-          },
-          {
-            "name": "quantum_authority",
-            "type": "pubkey"
           }
         ]
       }
